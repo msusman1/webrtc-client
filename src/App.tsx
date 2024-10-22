@@ -1,12 +1,12 @@
-import {Route, Routes, useNavigate} from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
 import LandingPage from "./LandingPage";
 import CreateRoom from "./CreateRoom";
 import ConferencePage from "./ConferencePage";
 import {createContext, useEffect, useState} from "react";
 import {io, Socket} from "socket.io-client";
 
-// export const SERVER_URL = "http://18.234.159.36:4000";
-export const SERVER_URL = "http://localhost:4000";
+export const SERVER_URL = "http://18.234.159.36:4000";
+// export const SERVER_URL = "http://localhost:4000";
 export const SocketContext = createContext<Socket | undefined>(undefined);
 
 function App() {

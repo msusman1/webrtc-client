@@ -1,5 +1,5 @@
 import {MessageSquare} from "lucide-react";
-import React, {FC, FormEvent, useContext, useEffect, useState} from "react";
+import React, {FormEvent, useContext, useEffect, useState} from "react";
 import {SocketContext} from "../App";
 import {ChatMessage, ChatMessageEventType} from "../types/Room";
 
@@ -16,7 +16,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName,
 
     useEffect(() => {
             socket?.on("receive_channel", onNewMessageReceived)
-        }, []
+        }, [socket]
     )
     const onNewMessageReceived = (chatMessage: ChatMessage) => {
         setChatMessages(prevMessages => [...prevMessages, chatMessage])

@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useRef, useState} from "react";
+import React, {useContext, useEffect, useRef} from "react";
 import {SocketContext} from "../App";
 
 interface VideoGridViewProps {
@@ -54,7 +54,7 @@ export const VideoGridView: React.FC<VideoGridViewProps> = ({roomName, personNam
             socket?.off('getIceCandidate');
             socket?.off('getAnswer');
         };
-    }, []);
+    }, [socket]);
 
 
     const startCall = async () => {

@@ -1,5 +1,5 @@
 import {useContext, useEffect, useState} from 'react'
-import {useNavigate, useParams, useSearchParams} from 'react-router-dom'
+import {useNavigate, useParams} from 'react-router-dom'
 import {SocketContext} from "./App";
 import {JoinRoomView} from "./components/JoinRoomView";
 import {VideoGridView} from "./components/VideoGridView";
@@ -25,13 +25,16 @@ export default function ConferencePage() {
 
     useEffect(() => {
         return function cleanup() {
-            const roomLeaveRequest: RoomLeaveRequest = {
-                personName: personName ?? "",
-                roomName: roomName ?? ""
+            if (socket && personName && roomName) {
+                const roomLeaveRequest: RoomLeaveRequest = {
+                    personName: personName ?? "",
+                    roomName: roomName ?? ""
+                }
+                socket?.emit("leave_room", roomLeaveRequest)
             }
-            socket?.emit("leave_room", roomLeaveRequest)
+
         }
-    }, [])
+    }, [socket, personName, roomName])
 
     const handleJoinRoom = (pName: string) => {
         setPersonName(pName)

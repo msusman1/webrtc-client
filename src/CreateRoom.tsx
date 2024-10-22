@@ -1,12 +1,10 @@
 import {FormEvent, useContext, useEffect, useState} from 'react'
 import {SocketContext} from "./App";
-import {useNavigate} from "react-router-dom";
 import {Room} from "./types/Room";
 
 
 export default function CreateRoom() {
     const socket = useContext(SocketContext)
-    const navigate = useNavigate();
     const [roomName, setRoomName] = useState('Fleek')
     const [room, setRoom] = useState<Room | undefined>()
     const handleSubmit = (e: FormEvent<any>) => {
