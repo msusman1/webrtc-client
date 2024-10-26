@@ -1,9 +1,12 @@
 import {useCallback, useEffect, useRef, useState} from "react";
 import {io, Socket} from "socket.io-client";
-import {SERVER_URL} from "../App";
+
 import {ChatMessage, Room, RoomJoinRequest, RoomLeaveRequest, RoomMessage, RoomMessageRequest} from "./types/Room";
 import {ConnectionState} from "./types/ConnectionState";
 
+
+//const SERVER_URL = "http://18.234.159.36:4000";
+const SERVER_URL = "http://localhost:4000";
 
 export function useSocketChannel() {
     const socketRef = useRef<Socket | null>(null)
@@ -69,7 +72,7 @@ export function useSocketChannel() {
     }, []);
 
     const createRoom = useCallback((roomName: string) => {
-        socketRef.current?.emit("create-room", roomName)
+        socketRef.current?.emit("create_room", roomName)
     }, [])
 
     const sendMessage = useCallback((message: RoomMessageRequest) => {
@@ -77,11 +80,11 @@ export function useSocketChannel() {
     }, [])
 
     const joinRoom = useCallback((roomJoinRequest: RoomJoinRequest) => {
-        socketRef.current?.emit("join-room", roomJoinRequest)
+        socketRef.current?.emit("join_room", roomJoinRequest)
     }, [])
 
     const leaveRoom = useCallback((roomLeaveRequest: RoomLeaveRequest) => {
-        socketRef.current?.emit("leave-room", roomLeaveRequest)
+        socketRef.current?.emit("leave_room", roomLeaveRequest)
     }, [])
 
     return {
@@ -94,7 +97,6 @@ export function useSocketChannel() {
         roomJoined,
         newUserJoined,
         leaveRoom,
-        error,
-
+        error
     }
 }

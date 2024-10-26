@@ -4,33 +4,24 @@ import {useEffect, useState} from "react";
 import {RoomFormDialog} from "./components/RoomFormDialog";
 import {VideoGridView} from "./components/VideoGridView";
 import {MessagesView} from "./components/MessagesView";
-import {ConnectionState} from "./data/types/ConnectionState";
+import {ConnectionState, DialogState} from "./data/types/ConnectionState";
 
-// export const SERVER_URL = "http://18.234.159.36:4000";
-export const SERVER_URL = "http://localhost:4000";
-
-enum DialogType {
-    CREATE = "CREATE",
-    JOIN = "JOIN"
-}
-
-function App() {
+export default function App() {
     const {connectionState, createRoom, joinRoom, roomCreated, roomJoined} = useSocketChannel()
-    const [roomDialogOpen, setRoomDialogOpen] = useState<boolean>(false)
     const [roomName, setRoomName] = useState<string>("")
     const [personName, setPersonName] = useState<string>("")
-    const [dialogType, setDialogType] = useState<DialogType>(DialogType.CREATE)
+    const [dialogState, setDialogState] = useState<DialogState>(DialogState.NONE)
 
 
     function onDialogSubmit(roomName: string, personName: string) {
-        setRoomDialogOpen(false)
         setRoomName(roomName)
         setPersonName(personName)
-        if (dialogType === DialogType.CREATE) {
+        if (dialogState === DialogState.CREATE) {
             createRoom(roomName)
-        } else if (dialogType === DialogType.JOIN) {
+        } else if (dialogState === DialogState.JOIN) {
             joinRoom({roomName, personName})
         }
+        setDialogState(DialogState.NONE)
     }
 
     useEffect(() => {
@@ -41,18 +32,17 @@ function App() {
 
 
     function onDialogDismiss() {
-        setRoomDialogOpen(false)
+        setDialogState(DialogState.NONE)
     }
 
     function onCreateClick() {
-        setDialogType(DialogType.CREATE)
-        setRoomDialogOpen(true)
+        setDialogState(DialogState.CREATE)
     }
 
     function onJoinClick() {
-        setDialogType(DialogType.JOIN)
-        setRoomDialogOpen(true)
+        setDialogState(DialogState.JOIN)
     }
+
     if (connectionState === ConnectionState.CONNECTING) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -92,14 +82,12 @@ function App() {
         </div>
     ) : (
         <>
-            <HomeButtonsView onJoinRoom={onCreateClick} onCreateRoom={onJoinClick}/>
-            {roomDialogOpen && (
-                <RoomFormDialog onDataEntered={onDialogSubmit} onCancel={onDialogDismiss}/>
-            )}
+            <HomeButtonsView onJoinRoom={onJoinClick} onCreateRoom={onCreateClick}/>
+            <RoomFormDialog dialogState={dialogState} onDataEntered={onDialogSubmit} onDismiss={onDialogDismiss}/>
+
         </>
     );
 
 
 }
 
-export default App;

@@ -1,66 +1,84 @@
-import React, {FC, FormEvent, useState} from 'react'
+import React, {FC, useState} from 'react'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from "./ui/alert-dialog";
+import {DialogState} from "../data/types/ConnectionState";
+
 
 interface RoomFormDialogProps {
+    dialogState: DialogState,
     onDataEntered: (roomName: string, personName: string) => void;
-    onCancel: () => void;
+    onDismiss: () => void;
 }
 
-export const RoomFormDialog: FC<RoomFormDialogProps> = ({onDataEntered, onCancel}) => {
+export const RoomFormDialog: FC<RoomFormDialogProps> = ({dialogState, onDataEntered, onDismiss}) => {
     const [roomName, setRoomName] = useState('Fleek')
     const [personName, setPersonName] = useState('Usman')
-    const handleSubmit = (e: FormEvent<any>) => {
-        e.preventDefault()
+    const handleSubmit = () => {
         if (roomName.trim().length > 2 && personName.trim().length > 2) {
             onDataEntered(roomName, personName)
         } else {
             alert('Please fill in both fields')
         }
     }
-
+    console.log("dialogState", dialogState)
 
     return (
-        <div className="dialog">
-            <div className="dialog-content">
-                <h1 className="text-2xl font-bold text-center text-gray-800">Create/Join a Room</h1>
-                <form onSubmit={handleSubmit} className="space-y-6">
 
-                    <div className="space-y-2">
-                        <label htmlFor="roomName" className="text-sm font-medium text-gray-700">
-                            Room Name
-                        </label>
-                        <input
-                            id="roomName"
-                            type="text"
-                            value={roomName}
-                            onChange={(e) => setRoomName(e.target.value)}
-                            placeholder="Enter room name"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label htmlFor="personName" className="text-sm font-medium text-gray-700">
-                            Room Name
-                        </label>
-                        <input
-                            id="personName"
-                            type="text"
-                            value={roomName}
-                            onChange={(e) => setPersonName(e.target.value)}
-                            placeholder="Enter Person name"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                    >
-                        Submit
-                    </button>
-                </form>
-                <div className="dialog-overlay" onClick={onCancel}></div>
-            </div>
-        </div>
+        <AlertDialog open={dialogState !== DialogState.NONE}>
+
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{dialogState === DialogState.CREATE ? "Create a Room" : "Join the Room"}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        <form className="space-y-6">
+
+                            <div className="space-y-2">
+                                <label htmlFor="roomName" className="text-sm font-medium text-gray-700">
+                                    Room Name
+                                </label>
+                                <input
+                                    id="roomName"
+                                    type="text"
+                                    value={roomName}
+                                    onChange={(e) => setRoomName(e.target.value)}
+                                    placeholder="Enter room name"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label htmlFor="personName" className="text-sm font-medium text-gray-700">
+                                    Full Name
+                                </label>
+                                <input
+                                    id="personName"
+                                    type="text"
+                                    value={personName}
+                                    onChange={(e) => setPersonName(e.target.value)}
+                                    placeholder="Enter Your Name"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+
+                        </form>
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={onDismiss}>Dismiss</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+
     )
 }
