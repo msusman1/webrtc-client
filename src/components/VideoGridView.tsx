@@ -1,81 +1,101 @@
-import React, {useContext, useEffect, useRef} from "react";
-import {SocketContext} from "../App";
+import React, {useRef, useState} from "react";
 
-interface VideoGridViewProps {
-    roomName: string;
-    personName: string;
+
+interface VideoTemplateViewProps {
+    roomName: string
+    personName: string
 }
 
-export const VideoGridView: React.FC<VideoGridViewProps> = ({roomName, personName}) => {
-    const socket = useContext(SocketContext);
-    const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
-    const localVideoRef = useRef<HTMLVideoElement>(null);
-    const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-    useEffect(() => {
-        const pc = new RTCPeerConnection({
-            iceServers: [{urls: 'stun:stun.l.google.com:19302'},]
-        });
-        pc.onicecandidate = e => {
-            if (e.candidate) {
-                socket?.emit('iceCandidate', e.candidate);
-            }
-        }
-        pc.ontrack = e => {
-            if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = e.streams[0];
-            }
-        }
+export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, personName}) => {
+    const localVideoRef = useRef<HTMLVideoElement | null>(null);
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [remoteStreams, setRemoteStreams] = useState<{ [socketId: string]: MediaStream }>({})
+    const [peerConnections, setPeerConnections] = useState<{ [socketId: string]: RTCPeerConnection }>({})
+    /*
+      const setupPeerConnection = async (socketId: string) => {
+          const localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+          const pc = new RTCPeerConnection({
+              iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
+          });
+          pc.getSenders()
+          localStream.getTracks().forEach(track => {
+              pc.addTrack(track, localStream);
+          })
+          if (localVideoRef.current) {
+              localVideoRef.current.srcObject = localStream
+          }
+          pc.onicecandidate = (rtcPeerConnectionEvent) => {
+              if (rtcPeerConnectionEvent.candidate) {
+                  const IceCandidateRequest: IccCandidateRequest = {
+                      iccCandidate: rtcPeerConnectionEvent.candidate,
+                      fromSocketId: socketId
+                  }
+                  socket?.emit('ice-candidate', IceCandidateRequest);
+              }
+          }
+          pc.ontrack = (event) => {
+              const remoteStream = event.streams[0]
+              setRemoteStreams((prevStreams) => ({...prevStreams, [socketId]: remoteStream}))
+          }
+          setPeerConnections((prevConnections) => ({...prevConnections, [socketId]: pc}))
+          return pc
+      }
+      const createOffer = async (socketId: string) => {
+          const pc = peerConnections[socketId]
+          if (pc) {
+              const offer = await pc.createOffer()
+              await pc.setLocalDescription(offer)
+              const offerRequest: OfferRequest = {
+                  offer: offer,
+                  roomName: roomName,
+                  offerFrom: socketId
+              }
+              socket?.emit('offer', offerRequest)
+          }
 
-        socket?.on("getOffer", async (sdf) => {
-            console.log("getOffer", sdf);
-            await pc.setRemoteDescription(sdf)
-            const sdfAnswer = await pc.createAnswer({
-                offerToReceiveAudio: true,
-                offerToReceiveVideo: true
-            })
-            await pc.setLocalDescription(sdfAnswer);
-            socket.emit("answer", sdfAnswer);
-        })
-        socket?.on("getIceCandidate", async (candidate) => {
-            console.log("onGetCandidates", candidate);
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        })
-        socket?.on("getAnswer", async (sdf) => {
-            console.log("onGetAnswer", sdf);
-            await pc.setRemoteDescription(sdf);
-        })
+      }
+      useEffect(() => {
+          if (socket) {
+              const roomJoinRequest: RoomJoinRequest = {
+                  roomName: roomName,
+                  personName: personName
+              }
+              socket.emit("join_room", roomJoinRequest)
 
-        peerConnectionRef.current = pc;
-
-        return () => {
-            pc.close();
-            socket?.off('getOffer');
-            socket?.off('getIceCandidate');
-            socket?.off('getAnswer');
-        };
-    }, [socket]);
+              socket.on("user_joined", async (roomMessage: RoomMessage) => {
+                  const pc = await setupPeerConnection(roomMessage.socketId)
+                  createOffer(roomMessage.socketId)
+              })
 
 
-    const startCall = async () => {
-        try {
-            const mediaStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-            if (localVideoRef.current) {
-                localVideoRef.current.srcObject = mediaStream;
-            }
-            mediaStream.getTracks().forEach(track => {
-                peerConnectionRef?.current?.addTrack(track, mediaStream);
-            })
-            const offer = await peerConnectionRef?.current?.createOffer();
-            await peerConnectionRef.current?.setLocalDescription(offer);
-            socket?.emit('offer', offer);
-            console.log('Offer sent:', offer);
-        } catch (e) {
-            console.error("error startCall", e);
-        }
+              socket.on("offer", async (offerRequest: OfferRequest) => {
+                  const pc = await setupPeerConnection(socket.id ?? "")
+                  const answer = await pc.createAnswer()
+                  await pc.setRemoteDescription(offerRequest.offer)
+                  await pc.setLocalDescription(answer)
+                  const answerRequest: AnswerRequest = {
+                      answer: answer,
+                      roomName: roomName,
+                      answerFor: offerRequest.offerFrom
+                  }
+                  socket.emit("answer", answerRequest);
+              })
+              socket.on("answer", async (answerRequest: AnswerRequest) => {
+                  const pc = peerConnections[answerRequest.answerFor]
+                  await pc.setRemoteDescription(answerRequest.answer)
+              })
+              socket?.on("ice-candidate", async (iccCandidateRequest: IccCandidateRequest) => {
+                  console.log("tce-candidate received", iccCandidateRequest);
+                  const pc = peerConnections[iccCandidateRequest.fromSocketId]
+                  if (pc) {
+                      await pc.addIceCandidate(iccCandidateRequest.iccCandidate);
+                  }
+              })
+          }
 
-    }
-
+      }, [peerConnections]);
+  */
     const getGridCols = (participants: number) => {
         if (participants === 1) {
             return "grid-cols-1";
@@ -91,7 +111,7 @@ export const VideoGridView: React.FC<VideoGridViewProps> = ({roomName, personNam
     };
 
     return (<div className="flex-1 p-4 overflow-auto">
-        <div className={`grid gap-4  ${getGridCols(2)}`}>
+        <div className={`grid gap-4  ${getGridCols(Object.keys(remoteStreams).length + 1)}`}>
             <div
                 className="aspect-video bg-gray-300 rounded-lg flex items-center justify-center">
                 <video ref={localVideoRef}
@@ -100,15 +120,16 @@ export const VideoGridView: React.FC<VideoGridViewProps> = ({roomName, personNam
                        muted className="h-full w-full text-gray-400">
                 </video>
             </div>
-            <div
-                className="aspect-video bg-gray-300 rounded-lg flex items-center justify-center">
-                <video ref={remoteVideoRef}
-                       autoPlay
-                       playsInline
-                       muted className="h-full w-full text-gray-400">
-                </video>
-            </div>
+            {Object.keys(remoteStreams).map((socketId) => (
+                <div key={socketId} className="aspect-video bg-gray-300 rounded-lg flex items-center justify-center">
+                    <video autoPlay playsInline className="h-full w-full text-gray-400" ref={(el) => {
+                        if (el) {
+                            el.srcObject = remoteStreams[socketId];
+                        }
+                    }}/>
+                </div>
+            ))}
+
         </div>
-        <button onClick={startCall}>startCall</button>
     </div>)
 }

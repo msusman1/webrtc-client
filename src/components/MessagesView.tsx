@@ -1,35 +1,31 @@
 import {MessageSquare} from "lucide-react";
-import React, {FormEvent, useContext, useEffect, useState} from "react";
-import {SocketContext} from "../App";
-import {ChatMessage, ChatMessageEventType} from "../types/Room";
+import React, {FormEvent, useState} from "react";
+import {useSocketChannel} from "../data/useSocketChannel";
+import {RoomMessageRequest} from "../data/types/Room";
 
 interface MessagesViewProps {
     roomName: string;
     personName: string;
-    onLeaveRoom: () => void;
 }
 
-export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName, onLeaveRoom}) => {
-    const socket = useContext(SocketContext);
+export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName}) => {
     const [newMessage, setNewMessage] = useState<string>('')
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+    const {sendMessage, chatMessages, leaveRoom} = useSocketChannel()
 
-    useEffect(() => {
-            socket?.on("receive_channel", onNewMessageReceived)
-        }, [socket]
-    )
-    const onNewMessageReceived = (chatMessage: ChatMessage) => {
-        setChatMessages(prevMessages => [...prevMessages, chatMessage])
-    }
 
     const handleLeaveRoom = () => {
-        onLeaveRoom()
+        leaveRoom({roomName, personName})
     }
 
     const handleSendMessage = (e: FormEvent<any>) => {
         e.preventDefault()
         if (newMessage.trim()) {
-            socket?.emit("send_channel", {roomName: roomName, personName: personName, content: newMessage})
+            const roomMessageRequest: RoomMessageRequest = {
+                roomName: roomName,
+                personName: personName,
+                content: newMessage
+            }
+            sendMessage(roomMessageRequest)
             setNewMessage('')
         }
     }
@@ -49,7 +45,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName,
                 return <div
                     className={` w-full flex ${chat.personName === personName ? "justify-end" : "justify-start"}`}
                     key={index}>
-                    {chat.eventType === ChatMessageEventType.textMessage ? (<div
+                    <div
                         className="mb-4 flex-col w-[200px] ">
                         <div
                             className={`max-w-sm rounded-lg ${chat.personName === personName ? " bg-amber-100" : " bg-cyan-100"} p-2 shadow-md`}>
@@ -57,16 +53,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName,
                             <p className="text-xs text-gray-500 mt-1">{chat.personName}</p>
                         </div>
                         <p className="text-xs text-gray-400 mt-2 italic">{chat.timestamp}</p>
-                    </div>) : (<div
-                        className="mb-4 flex flex-row content-center justify-center items-center space-x-2">
-                        <hr style={{width: 60}}/>
-                        <div className="flex px-4 text-center">
-                            <p className="text-xs text-gray-400 mt-1 italic">
-                                {chat.personName} {chat.eventType === ChatMessageEventType.joinedRoom ? "Joined Room" : "Left Room"}
-                            </p>
-                        </div>
-                        <hr style={{width: 60}}/>
-                    </div>)}
+                    </div>
                 </div>
 
             })}
