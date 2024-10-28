@@ -5,8 +5,9 @@ import {ChatMessage, RoomJoinRequest, RoomLeaveRequest, RoomMessage, RoomMessage
 import {ConnectionState} from "./types/ConnectionState";
 
 
-//const SERVER_URL = "http://18.234.159.36:4000";
-const SERVER_URL = "http://localhost:4000";
+const SERVER_URL = "http://3.89.28.171:4000";
+
+// const SERVER_URL = "http://localhost:4000";
 
 export function useSocketChannel() {
     const socketRef = useRef<Socket | null>(null)
@@ -71,5 +72,6 @@ export function useSocketChannel() {
         joinRoom,
         userJoined,
         leaveRoom,
+        userLeft,
     }
 }

@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 
 
 interface VideoTemplateViewProps {
@@ -9,9 +9,12 @@ interface VideoTemplateViewProps {
 
 export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, personName}) => {
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
-    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    // const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStreams, setRemoteStreams] = useState<{ [socketId: string]: MediaStream }>({})
-    const [peerConnections, setPeerConnections] = useState<{ [socketId: string]: RTCPeerConnection }>({})
+    // const [peerConnections, setPeerConnections] = useState<{ [socketId: string]: RTCPeerConnection }>({})
+    useEffect(() => {
+        setRemoteStreams({"1123": new MediaStream()})
+    }, []);
     /*
       const setupPeerConnection = async (socketId: string) => {
           const localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
