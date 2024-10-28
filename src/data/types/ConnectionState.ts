@@ -4,9 +4,3 @@ export enum ConnectionState {
     DISCONNECTED = 'DISCONNECTED',
     FAILED = 'CONNECTING_FAILED',
 }
-
-export enum DialogState {
-    NONE = "NONE",
-    CREATE = "CREATE",
-    JOIN = "JOIN"
-}

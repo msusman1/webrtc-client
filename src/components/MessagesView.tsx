@@ -1,21 +1,26 @@
 import {MessageSquare} from "lucide-react";
-import React, {FormEvent, useState} from "react";
-import {useSocketChannel} from "../data/useSocketChannel";
-import {RoomMessageRequest} from "../data/types/Room";
+import React, {FormEvent, useEffect, useRef, useState} from "react";
+import {ChatMessage, RoomMessageRequest} from "../data/types/Room";
+import {ScrollArea} from "../components/ui/scroll-area";
 
 interface MessagesViewProps {
     roomName: string;
     personName: string;
+    sendMessage: (message: RoomMessageRequest) => void;
+    chatMessages: ChatMessage[];
+    onLeaveRoomClick: () => void;
 }
 
-export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName}) => {
+export const MessagesView: React.FC<MessagesViewProps> = ({
+                                                              roomName,
+                                                              personName,
+                                                              onLeaveRoomClick,
+                                                              sendMessage,
+                                                              chatMessages
+                                                          }) => {
     const [newMessage, setNewMessage] = useState<string>('')
-    const {sendMessage, chatMessages, leaveRoom} = useSocketChannel()
-
-
-    const handleLeaveRoom = () => {
-        leaveRoom({roomName, personName})
-    }
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const handleLeaveRoom = () => onLeaveRoomClick()
 
     const handleSendMessage = (e: FormEvent<any>) => {
         e.preventDefault()
@@ -29,6 +34,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName}
             setNewMessage('')
         }
     }
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+    }, [chatMessages]);
 
     return (<div className="w-[300px] bg-white border-l border-gray-200 flex flex-col h-full">
         <div className="p-4 border-b border-gray-200 flex  justify-between">
@@ -39,7 +49,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName}
                 Leave Room
             </button>
         </div>
-        <div className="flex-1 p-4 overflow-y-auto ">
+        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
 
             {chatMessages.map((chat, index) => {
                 return <div
@@ -58,7 +68,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({roomName, personName}
 
             })}
 
-        </div>
+        </ScrollArea>
         <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
             <div className="flex space-x-2">
                 <input

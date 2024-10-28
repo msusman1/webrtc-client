@@ -1,6 +1,3 @@
-export interface Room {
-    name: string;
-}
 
 export interface RoomJoinRequest {
     roomName: string,

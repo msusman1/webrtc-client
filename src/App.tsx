@@ -1,46 +1,40 @@
 import {HomeButtonsView} from "./HomeButtonsView";
 import {useSocketChannel} from "./data/useSocketChannel";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import {RoomFormDialog} from "./components/RoomFormDialog";
 import {VideoGridView} from "./components/VideoGridView";
 import {MessagesView} from "./components/MessagesView";
-import {ConnectionState, DialogState} from "./data/types/ConnectionState";
+import {ConnectionState} from "./data/types/ConnectionState";
 
 export default function App() {
-    const {connectionState, createRoom, joinRoom, roomCreated, roomJoined} = useSocketChannel()
+    const {connectionState, joinRoom, leaveRoom, sendMessage, chatMessages} = useSocketChannel()
     const [roomName, setRoomName] = useState<string>("")
     const [personName, setPersonName] = useState<string>("")
-    const [dialogState, setDialogState] = useState<DialogState>(DialogState.NONE)
+    const [dialogOpen, setDialogOpen] = useState<boolean>(false)
+    const [roomJoined, setRoomJoined] = useState<boolean>(false)
 
 
     function onDialogSubmit(roomName: string, personName: string) {
+        setDialogOpen(false)
         setRoomName(roomName)
         setPersonName(personName)
-        if (dialogState === DialogState.CREATE) {
-            createRoom(roomName)
-        } else if (dialogState === DialogState.JOIN) {
-            joinRoom({roomName, personName})
-        }
-        setDialogState(DialogState.NONE)
+        joinRoom({roomName, personName})
+        setRoomJoined(true)
     }
-
-    useEffect(() => {
-        if (roomCreated) {
-            joinRoom({roomName, personName})
-        }
-    }, [joinRoom, roomCreated, personName, roomName]);
 
 
     function onDialogDismiss() {
-        setDialogState(DialogState.NONE)
+        setDialogOpen(false)
     }
 
-    function onCreateClick() {
-        setDialogState(DialogState.CREATE)
-    }
 
     function onJoinClick() {
-        setDialogState(DialogState.JOIN)
+        setDialogOpen(true)
+    }
+
+    function onLeaveClick() {
+        leaveRoom({roomName, personName})
+        setRoomJoined(false)
     }
 
     if (connectionState === ConnectionState.CONNECTING) {
@@ -78,12 +72,18 @@ export default function App() {
     return roomJoined ? (
         <div className="flex h-screen bg-gray-100">
             <VideoGridView roomName={roomName} personName={personName}/>
-            <MessagesView roomName={roomName} personName={personName}/>
+            <MessagesView
+                roomName={roomName}
+                personName={personName}
+                onLeaveRoomClick={onLeaveClick}
+                sendMessage={sendMessage}
+                chatMessages={chatMessages}
+            />
         </div>
     ) : (
         <>
-            <HomeButtonsView onJoinRoom={onJoinClick} onCreateRoom={onCreateClick}/>
-            <RoomFormDialog dialogState={dialogState} onDataEntered={onDialogSubmit} onDismiss={onDialogDismiss}/>
+            <HomeButtonsView onJoinRoom={onJoinClick}/>
+            <RoomFormDialog isOpen={dialogOpen} onDataEntered={onDialogSubmit} onDismiss={onDialogDismiss}/>
 
         </>
     );

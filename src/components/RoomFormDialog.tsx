@@ -9,16 +9,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle
 } from "./ui/alert-dialog";
-import {DialogState} from "../data/types/ConnectionState";
 
 
 interface RoomFormDialogProps {
-    dialogState: DialogState,
+    isOpen: boolean,
     onDataEntered: (roomName: string, personName: string) => void;
     onDismiss: () => void;
 }
 
-export const RoomFormDialog: FC<RoomFormDialogProps> = ({dialogState, onDataEntered, onDismiss}) => {
+export const RoomFormDialog: FC<RoomFormDialogProps> = ({isOpen, onDataEntered, onDismiss}) => {
     const [roomName, setRoomName] = useState('Fleek')
     const [personName, setPersonName] = useState('Usman')
     const handleSubmit = () => {
@@ -28,15 +27,14 @@ export const RoomFormDialog: FC<RoomFormDialogProps> = ({dialogState, onDataEnte
             alert('Please fill in both fields')
         }
     }
-    console.log("dialogState", dialogState)
 
     return (
 
-        <AlertDialog open={dialogState !== DialogState.NONE}>
+        <AlertDialog open={isOpen}>
 
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{dialogState === DialogState.CREATE ? "Create a Room" : "Join the Room"}</AlertDialogTitle>
+                    <AlertDialogTitle>Join the Room</AlertDialogTitle>
                     <AlertDialogDescription>
                         <form className="space-y-6">
 
