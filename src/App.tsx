@@ -1,13 +1,20 @@
 import {HomeButtonsView} from "./HomeButtonsView";
-import {useSocketChannel} from "./data/useSocketChannel";
+import {useSocketConnectionChannel} from "./data/useSocketConnectionChannel";
 import {useState} from "react";
 import {RoomFormDialog} from "./components/RoomFormDialog";
 import {VideoGridView} from "./components/VideoGridView";
 import {MessagesView} from "./components/MessagesView";
 import {ConnectionState} from "./data/types/ConnectionState";
+import {Peer} from "./data/types/Room";
+import {useSocketRoomChannel} from "./data/useSocketRoomChannel";
 
 export default function App() {
-    const {connectionState, joinRoom, leaveRoom, sendMessage, chatMessages} = useSocketChannel()
+
+    const {connectionState,} = useSocketConnectionChannel()
+    const {joinRoom, leaveRoom} = useSocketRoomChannel(
+        (roomMessage: Peer) => {},
+        (roomMessage: Peer) => {}
+    )
     const [roomName, setRoomName] = useState<string>("")
     const [personName, setPersonName] = useState<string>("")
     const [dialogOpen, setDialogOpen] = useState<boolean>(false)
@@ -76,8 +83,6 @@ export default function App() {
                 roomName={roomName}
                 personName={personName}
                 onLeaveRoomClick={onLeaveClick}
-                sendMessage={sendMessage}
-                chatMessages={chatMessages}
             />
         </div>
     ) : (

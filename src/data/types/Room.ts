@@ -1,4 +1,3 @@
-
 export interface RoomJoinRequest {
     roomName: string,
     personName: string
@@ -10,16 +9,16 @@ export interface RoomMessageRequest {
     content: string
 }
 
-export interface OfferRequest {
+export interface Offer {
     offer: RTCSessionDescriptionInit,
-    roomName: string,
-    offerFrom: string
+    fromPeer: string,
+    toPeer: string,
 }
 
-export interface AnswerRequest {
+export interface Answer {
     answer: RTCSessionDescriptionInit,
-    roomName: string,
-    answerFor: string
+    fromPeer: string,
+    toPeer: string,
 }
 
 export interface RoomLeaveRequest {
@@ -33,15 +32,14 @@ export interface ChatMessage {
     timestamp: string,
 }
 
-export interface RoomMessage {
-    timestamp: string,
+export interface Peer {
     roomName: string
     personName: string
     socketId: string
 }
 
-export interface IccCandidateRequest {
+export interface IccCandidate {
     iccCandidate: RTCIceCandidate,
-    candidateFor: string,
-    roomName: string,
+    fromPeer: string,
+    toPeer: string,
 }

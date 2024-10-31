@@ -1,4 +1,8 @@
 import React, {useEffect, useRef, useState} from "react";
+import {Answer, IccCandidate, Offer, Peer} from "@/data/types/Room";
+import {useSocketRoomChannel} from "../data/useSocketRoomChannel";
+import {useSocketRtcChannel} from "../data/useSocketRtcChannel";
+import {logWithTimestamp} from "../data/SocketConnection";
 
 
 interface VideoTemplateViewProps {
@@ -9,109 +13,130 @@ interface VideoTemplateViewProps {
 
 export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, personName}) => {
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
-    // const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const peerConnections = useRef<{ [socketId: string]: RTCPeerConnection }>({});
     const [remoteStreams, setRemoteStreams] = useState<{ [socketId: string]: MediaStream }>({})
-    // const [peerConnections, setPeerConnections] = useState<{ [socketId: string]: RTCPeerConnection }>({})
-    useEffect(() => {
-        setRemoteStreams({"1123": new MediaStream()})
-    }, []);
-    /*
-      const setupPeerConnection = async (socketId: string) => {
-          const localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-          const pc = new RTCPeerConnection({
-              iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
-          });
-          pc.getSenders()
-          localStream.getTracks().forEach(track => {
-              pc.addTrack(track, localStream);
-          })
-          if (localVideoRef.current) {
-              localVideoRef.current.srcObject = localStream
-          }
-          pc.onicecandidate = (rtcPeerConnectionEvent) => {
-              if (rtcPeerConnectionEvent.candidate) {
-                  const IceCandidateRequest: IccCandidateRequest = {
-                      iccCandidate: rtcPeerConnectionEvent.candidate,
-                      fromSocketId: socketId
-                  }
-                  socket?.emit('ice-candidate', IceCandidateRequest);
-              }
-          }
-          pc.ontrack = (event) => {
-              const remoteStream = event.streams[0]
-              setRemoteStreams((prevStreams) => ({...prevStreams, [socketId]: remoteStream}))
-          }
-          setPeerConnections((prevConnections) => ({...prevConnections, [socketId]: pc}))
-          return pc
-      }
-      const createOffer = async (socketId: string) => {
-          const pc = peerConnections[socketId]
-          if (pc) {
-              const offer = await pc.createOffer()
-              await pc.setLocalDescription(offer)
-              const offerRequest: OfferRequest = {
-                  offer: offer,
-                  roomName: roomName,
-                  offerFrom: socketId
-              }
-              socket?.emit('offer', offerRequest)
-          }
 
-      }
-      useEffect(() => {
-          if (socket) {
-              const roomJoinRequest: RoomJoinRequest = {
-                  roomName: roomName,
-                  personName: personName
-              }
-              socket.emit("join_room", roomJoinRequest)
-
-              socket.on("user_joined", async (roomMessage: RoomMessage) => {
-                  const pc = await setupPeerConnection(roomMessage.socketId)
-                  createOffer(roomMessage.socketId)
-              })
-
-
-              socket.on("offer", async (offerRequest: OfferRequest) => {
-                  const pc = await setupPeerConnection(socket.id ?? "")
-                  const answer = await pc.createAnswer()
-                  await pc.setRemoteDescription(offerRequest.offer)
-                  await pc.setLocalDescription(answer)
-                  const answerRequest: AnswerRequest = {
-                      answer: answer,
-                      roomName: roomName,
-                      answerFor: offerRequest.offerFrom
-                  }
-                  socket.emit("answer", answerRequest);
-              })
-              socket.on("answer", async (answerRequest: AnswerRequest) => {
-                  const pc = peerConnections[answerRequest.answerFor]
-                  await pc.setRemoteDescription(answerRequest.answer)
-              })
-              socket?.on("ice-candidate", async (iccCandidateRequest: IccCandidateRequest) => {
-                  console.log("tce-candidate received", iccCandidateRequest);
-                  const pc = peerConnections[iccCandidateRequest.fromSocketId]
-                  if (pc) {
-                      await pc.addIceCandidate(iccCandidateRequest.iccCandidate);
-                  }
-              })
-          }
-
-      }, [peerConnections]);
-  */
-    const getGridCols = (participants: number) => {
-        if (participants === 1) {
-            return "grid-cols-1";
-        } else if (participants === 2) {
-            return "md:grid-cols-2";
-        } else if (participants === 3) {
-            return "md:grid-cols-3";
-        } else if (participants === 4) {
-            return "md:grid-cols-2 lg:grid-cols-2 grid-rows-2";
+    //other peer socket id, lets have rtc connection
+    const setupPeerConnection = async (peerSocketId: string) => {
+        logWithTimestamp(`setupPeerConnection, peerSocketId:`, peerSocketId);
+        const pc = new RTCPeerConnection({
+            iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
+        });
+        logWithTimestamp(`Lets add local stream to pc`, localStream);
+        if (localStream) {
+            localStream?.getTracks().forEach(track => {
+                pc.addTrack(track, localStream);
+            })
         } else {
-            return "md:grid-cols-3 lg:grid-cols-4";
+            const mediaStream = await window.navigator.mediaDevices.getUserMedia({audio: false, video: true})
+            mediaStream.getTracks().forEach(track => {
+                pc.addTrack(track, mediaStream);
+            })
+            setLocalStream(mediaStream)
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = mediaStream
+            }
         }
-    };
+
+
+        pc.ontrack = (event) => {
+            logWithTimestamp(`On track event from peer: ${peerSocketId}`, event);
+            const remoteStream = event.streams[0]
+            setRemoteStreams((prevStreams) => ({...prevStreams, [peerSocketId]: remoteStream}))
+        }
+        pc.onicecandidate = (rtcPeerConnectionEvent) => {
+            if (rtcPeerConnectionEvent.candidate) {
+                const iccCandidate: IccCandidate = {
+                    iccCandidate: rtcPeerConnectionEvent.candidate,
+                    fromPeer: mySocketId ?? "",
+                    toPeer: peerSocketId,
+                }
+                sendIccCandidate(iccCandidate)
+            }
+        }
+        return pc
+    }
+
+    const onUserJoined = async (peer: Peer) => {
+        logWithTimestamp(`onUserJoined`, peer)
+        const isCurrentUser = peer.socketId === mySocketId
+        if (isCurrentUser) {
+            const mediaStream = await window.navigator.mediaDevices.getUserMedia({audio: false, video: true})
+            setLocalStream(mediaStream)
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = mediaStream
+            }
+        } else {
+            //set up one to one peer connection to newly joined user
+            const pc = await setupPeerConnection(peer.socketId)
+            peerConnections.current[peer.socketId] = pc
+            // now create offer to newly joined user
+            const offer = await pc.createOffer()
+            await pc.setLocalDescription(offer)
+            const mOffer: Offer = {
+                offer: offer,
+                fromPeer: mySocketId ?? "",
+                toPeer: peer.socketId,
+            }
+            sendOffer(mOffer)
+        }
+
+    }
+
+    //newly joined user will received an offer
+    // and setup peer connection to the user who send the offer
+    // and will send back the response to the user who send the offer
+    const onReceiveOffer = async (offer: Offer) => {
+        const pc = await setupPeerConnection(offer.fromPeer)
+        peerConnections.current[offer.fromPeer] = pc
+        await pc.setRemoteDescription(offer.offer)
+        const answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        const mAnswer: Answer = {
+            answer: answer,
+            fromPeer: mySocketId ?? "",
+            toPeer: offer.fromPeer
+        }
+        sendAnswer(mAnswer)
+    }
+
+    //newly joined user sent answer will be received here
+    const onReceiveAnswer = async (answer: Answer) => {
+        const pc = peerConnections.current[answer.fromPeer]
+        await pc?.setRemoteDescription(answer.answer)
+    }
+
+
+    const onUserLeft = (peer: Peer) => {
+        logWithTimestamp(`onUserLeft`, peer)
+        peerConnections.current[peer.socketId]?.close();
+        delete peerConnections.current[peer.socketId]
+        setRemoteStreams(prevStreams => {
+            const {[peer.socketId]: _, ...remainingStreams} = prevStreams;
+            return remainingStreams;
+        });
+
+    }
+    const onReceiveIceCandidate = async (iceCandidate: IccCandidate) => {
+        const pc = peerConnections.current[iceCandidate.fromPeer]
+        await pc?.addIceCandidate(iceCandidate.iccCandidate);
+    }
+
+
+    useSocketRoomChannel(onUserJoined, onUserLeft)
+    const {
+        mySocketId,
+        sendIccCandidate,
+        sendOffer,
+        sendAnswer
+    } = useSocketRtcChannel(onReceiveIceCandidate, onReceiveOffer, onReceiveAnswer)
+
+    useEffect(() => {
+        return () => {
+            localStream?.getTracks().forEach((track) => track.stop());
+        };
+    }, [localStream]);
 
     return (<div className="flex-1 p-4 overflow-auto">
         <div className={`grid gap-4  ${getGridCols(Object.keys(remoteStreams).length + 1)}`}>
@@ -123,11 +148,12 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
                        muted className="h-full w-full text-gray-400">
                 </video>
             </div>
-            {Object.keys(remoteStreams).map((socketId) => (
-                <div key={socketId} className="aspect-video bg-gray-300 rounded-lg flex items-center justify-center">
+            {Object.entries(remoteStreams).map(([socketId, stream]) => (
+                <div key={socketId}
+                     className="aspect-video bg-gray-300 rounded-lg flex items-center justify-center">
                     <video autoPlay playsInline className="h-full w-full text-gray-400" ref={(el) => {
-                        if (el) {
-                            el.srcObject = remoteStreams[socketId];
+                        if (el && el.srcObject !== stream) {
+                            el.srcObject = stream;
                         }
                     }}/>
                 </div>
@@ -136,3 +162,12 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
         </div>
     </div>)
 }
+const getGridCols = (participants: number) => {
+    const colsMap: { [key: number]: string } = {
+        1: "grid-cols-1",
+        2: "md:grid-cols-2",
+        3: "md:grid-cols-3",
+        4: "md:grid-cols-2 lg:grid-cols-2 grid-rows-2",
+    };
+    return colsMap[participants] || "md:grid-cols-3 lg:grid-cols-4";
+};

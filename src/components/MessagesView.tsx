@@ -2,12 +2,11 @@ import {MessageSquare} from "lucide-react";
 import React, {FormEvent, useEffect, useRef, useState} from "react";
 import {ChatMessage, RoomMessageRequest} from "../data/types/Room";
 import {ScrollArea} from "../components/ui/scroll-area";
+import {useSocketMessageChannel} from "../data/useSocketMessageChannel";
 
 interface MessagesViewProps {
     roomName: string;
     personName: string;
-    sendMessage: (message: RoomMessageRequest) => void;
-    chatMessages: ChatMessage[];
     onLeaveRoomClick: () => void;
 }
 
@@ -15,9 +14,12 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                                                               roomName,
                                                               personName,
                                                               onLeaveRoomClick,
-                                                              sendMessage,
-                                                              chatMessages
                                                           }) => {
+
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+    const {sendMessage} = useSocketMessageChannel((chatMessage: ChatMessage) => {
+        setChatMessages([...chatMessages, chatMessage]);
+    })
     const [newMessage, setNewMessage] = useState<string>('')
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const handleLeaveRoom = () => onLeaveRoomClick()
