@@ -2,7 +2,7 @@
 
 This project is a frontend implementation of a WebRTC client with features for real-time audio-video streaming and chat messaging. It allows users to create and join rooms, enabling seamless peer-to-peer communication. 
 
-![App Screenshot](https://github.com/msusman1/webrtc-client/media/app_screenshot.png)
+![App Screenshot](https://github.com/msusman1/webrtc-client/blob/master/media/app_screenshot.png)
 
 ## Features
 
