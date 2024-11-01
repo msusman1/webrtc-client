@@ -1,7 +1,7 @@
 import React, {useEffect, useRef} from "react";
 import {io, Socket} from "socket.io-client";
 
-export const CallingScreen = () => {
+export const OneToOneCallScreen = () => {
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
     const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
     const peerConnection = useRef<RTCPeerConnection | undefined>();

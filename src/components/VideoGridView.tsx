@@ -70,7 +70,7 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
             setTimeout(() => {
                 sendOffer(mOffer)
                 logWithTimestamp(`sent Offer to `, peer)
-            }, 10000) // add some delay so peer can setup the local media steam
+            }, 5000) // add some delay so peer can setup the local media steam
 
         }
 
@@ -147,7 +147,7 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
             {Object.entries(remoteStreams).map(([socketId, stream]) => (
                 <div key={socketId}
                      className="aspect-video bg-gray-300 rounded-lg flex items-center justify-center">
-                    <video key={socketId+stream.id} autoPlay playsInline className="h-full w-full text-gray-400" ref={(el) => {
+                    <video autoPlay playsInline className="h-full w-full text-gray-400" ref={(el) => {
                         if (el && el.srcObject !== stream) {
                             el.srcObject = stream;
                         }
