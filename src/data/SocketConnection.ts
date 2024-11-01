@@ -16,8 +16,8 @@ export const getSocket = () => {
 }
 
 
-export function logWithTimestamp(message: string,...optionalParams: any[]) {
+export function logWithTimestamp(message: string, optionalParams: any) {
     const now = new Date();
     const timestamp = now.toISOString(); // ISO string includes milliseconds
-    console.log(`[${timestamp}] ${message}`,optionalParams);
+    console.log(`[${timestamp}] ${message}`, optionalParams);
 }

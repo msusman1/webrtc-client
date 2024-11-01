@@ -24,25 +24,13 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
             iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
         });
         logWithTimestamp(`Lets add local stream to pc`, localStream);
-        if (localStream) {
-            localStream?.getTracks().forEach(track => {
-                pc.addTrack(track, localStream);
-            })
-        } else {
-            const mediaStream = await window.navigator.mediaDevices.getUserMedia({audio: false, video: true})
-            mediaStream.getTracks().forEach(track => {
-                pc.addTrack(track, mediaStream);
-            })
-            setLocalStream(mediaStream)
-            if (localVideoRef.current) {
-                localVideoRef.current.srcObject = mediaStream
-            }
-        }
-
+        localStream?.getTracks().forEach(track => {
+            pc.addTrack(track, localStream);
+        })
 
         pc.ontrack = (event) => {
-            logWithTimestamp(`On track event from peer: ${peerSocketId}`, event);
             const remoteStream = event.streams[0]
+            logWithTimestamp(`On Receive remote stream from peer: ${peerSocketId} video tracks`, remoteStream.getVideoTracks());
             setRemoteStreams((prevStreams) => ({...prevStreams, [peerSocketId]: remoteStream}))
         }
         pc.onicecandidate = (rtcPeerConnectionEvent) => {
@@ -59,8 +47,8 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
     }
 
     const onUserJoined = async (peer: Peer) => {
-        logWithTimestamp(`onUserJoined`, peer)
         const isCurrentUser = peer.socketId === mySocketId
+        logWithTimestamp(`onUserJoined isCurrentUser:${isCurrentUser}`, peer)
         if (isCurrentUser) {
             const mediaStream = await window.navigator.mediaDevices.getUserMedia({audio: false, video: true})
             setLocalStream(mediaStream)
@@ -79,7 +67,11 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
                 fromPeer: mySocketId ?? "",
                 toPeer: peer.socketId,
             }
-            sendOffer(mOffer)
+            setTimeout(() => {
+                sendOffer(mOffer)
+                logWithTimestamp(`sent Offer to `, peer)
+            }, 10000) // add some delay so peer can setup the local media steam
+
         }
 
     }
@@ -88,6 +80,7 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
     // and setup peer connection to the user who send the offer
     // and will send back the response to the user who send the offer
     const onReceiveOffer = async (offer: Offer) => {
+        logWithTimestamp(`receive Offer from `, offer.fromPeer)
         const pc = await setupPeerConnection(offer.fromPeer)
         peerConnections.current[offer.fromPeer] = pc
         await pc.setRemoteDescription(offer.offer)
@@ -99,10 +92,12 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
             toPeer: offer.fromPeer
         }
         sendAnswer(mAnswer)
+        logWithTimestamp(`sent answer to `, mAnswer.toPeer)
     }
 
     //newly joined user sent answer will be received here
     const onReceiveAnswer = async (answer: Answer) => {
+        logWithTimestamp(`receive answer from `, answer.fromPeer)
         const pc = peerConnections.current[answer.fromPeer]
         await pc?.setRemoteDescription(answer.answer)
     }
@@ -148,10 +143,11 @@ export const VideoGridView: React.FC<VideoTemplateViewProps> = ({roomName, perso
                        muted className="h-full w-full text-gray-400">
                 </video>
             </div>
+
             {Object.entries(remoteStreams).map(([socketId, stream]) => (
                 <div key={socketId}
                      className="aspect-video bg-gray-300 rounded-lg flex items-center justify-center">
-                    <video autoPlay playsInline className="h-full w-full text-gray-400" ref={(el) => {
+                    <video key={socketId+stream.id} autoPlay playsInline className="h-full w-full text-gray-400" ref={(el) => {
                         if (el && el.srcObject !== stream) {
                             el.srcObject = stream;
                         }
